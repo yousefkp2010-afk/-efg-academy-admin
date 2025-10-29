@@ -6,7 +6,23 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// إصلاح تحذير MemoryStore
+const session = require('express-session');
+const MemoryStore = require('memorystore')(session);
 
+// ثم عدل جزء الجلسات ليصبح:
+app.use(session({
+    store: new MemoryStore({
+        checkPeriod: 86400000 // تنظيف الجلسات المنتهية كل 24 ساعة
+    }),
+    secret: process.env.SESSION_SECRET || 'efg-academy-secret-key-2024',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
+    }
+}));
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -190,6 +206,19 @@ app.delete('/admin/api/lessons/:language/:level/:id', requireLogin, (req, res) =
         res.json({ success: true });
     } else {
         res.json({ success: false, error: 'الدرس غير موجود' });
+    }
+});
+// صفحة الرئيسية - إعادة توجيه إلى /admin
+app.get('/', (req, res) => {
+    res.redirect('/admin');
+});
+
+// إذا كان المستخدم لم يسجل دخول، أرسل له صفحة بسيطة
+app.get('/admin', (req, res) => {
+    if (req.session.isLoggedIn) {
+        res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+    } else {
+        res.sendFile(path.join(__dirname, 'public', 'admin.html'));
     }
 });
 // بدء السيرفر
