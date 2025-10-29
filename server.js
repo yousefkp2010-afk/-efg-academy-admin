@@ -1,16 +1,19 @@
 const express = require('express');
 const session = require('express-session');
+const MemoryStore = require('memorystore')(session);
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// إصلاح تحذير MemoryStore
-const session = require('express-session');
-const MemoryStore = require('memorystore')(session);
 
-// ثم عدل جزء الجلسات ليصبح:
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+// جلسات المستخدم
 app.use(session({
     store: new MemoryStore({
         checkPeriod: 86400000 // تنظيف الجلسات المنتهية كل 24 ساعة
@@ -23,23 +26,11 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-// جلسات المستخدم
-app.use(session({
-    secret: 'your-secret-key-here',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }
-}));
 
 // وظيفة لقراءة ملفات JSON
 function readJSONFile(filename) {
     try {
-        const data = fs.readFileSync(path.join(__dirname, '/data', filename), 'utf8');
+        const data = fs.readFileSync(path.join(__dirname, 'data', filename), 'utf8');
         return JSON.parse(data);
     } catch (error) {
         return {};
@@ -48,15 +39,20 @@ function readJSONFile(filename) {
 
 // وظيفة لكتابة ملفات JSON
 function writeJSONFile(filename, data) {
-    fs.writeFileSync(path.join(__dirname, '/data', filename), JSON.stringify(data, null, 2));
+    fs.writeFileSync(path.join(__dirname, 'data', filename), JSON.stringify(data, null, 2));
 }
+
+// صفحة الرئيسية - إعادة توجيه إلى /admin
+app.get('/', (req, res) => {
+    res.redirect('/admin');
+});
 
 // صفحة الدخول
 app.get('/admin', (req, res) => {
     if (req.session.isLoggedIn) {
-        res.sendFile(path.join(__dirname, '/puplic', 'dashboard.html'));
+        res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
     } else {
-        res.sendFile(path.join(__dirname, '/puplic', 'admin.html'));
+        res.sendFile(path.join(__dirname, 'public', 'admin.html'));
     }
 });
 
@@ -90,15 +86,13 @@ function requireLogin(req, res, next) {
         res.status(401).json({ error: 'غير مصرح' });
     }
 }
-// APIs للأخبار
 
-// الحصول على جميع الأخبار
+// APIs للأخبار
 app.get('/admin/api/news', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     res.json(content.news || []);
 });
 
-// إضافة خبر جديد
 app.post('/admin/api/news', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     const newNews = {
@@ -113,7 +107,6 @@ app.post('/admin/api/news', requireLogin, (req, res) => {
     res.json({ success: true, news: newNews });
 });
 
-// حذف خبر
 app.delete('/admin/api/news/:id', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     const newsId = parseInt(req.params.id);
@@ -126,15 +119,13 @@ app.delete('/admin/api/news/:id', requireLogin, (req, res) => {
         res.json({ success: false, error: 'لا توجد أخبار' });
     }
 });
-// APIs للكورسات
 
-// الحصول على جميع الكورسات
+// APIs للكورسات
 app.get('/admin/api/courses', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     res.json(content.courses || {});
 });
 
-// إضافة كورس جديد
 app.post('/admin/api/courses', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     const { language, level, ...courseData } = req.body;
@@ -148,7 +139,6 @@ app.post('/admin/api/courses', requireLogin, (req, res) => {
     res.json({ success: true });
 });
 
-// حذف كورس
 app.delete('/admin/api/courses/:language/:level', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     const { language, level } = req.params;
@@ -163,14 +153,11 @@ app.delete('/admin/api/courses/:language/:level', requireLogin, (req, res) => {
 });
 
 // APIs للدروس
-
-// الحصول على جميع الدروس
 app.get('/admin/api/lessons', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     res.json(content.lessons || {});
 });
 
-// إضافة درس جديد
 app.post('/admin/api/lessons', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     const { language, level, ...lessonData } = req.body;
@@ -194,7 +181,6 @@ app.post('/admin/api/lessons', requireLogin, (req, res) => {
     res.json({ success: true, lesson: newLesson });
 });
 
-// حذف درس
 app.delete('/admin/api/lessons/:language/:level/:id', requireLogin, (req, res) => {
     const content = readJSONFile('content.json');
     const { language, level, id } = req.params;
@@ -208,19 +194,7 @@ app.delete('/admin/api/lessons/:language/:level/:id', requireLogin, (req, res) =
         res.json({ success: false, error: 'الدرس غير موجود' });
     }
 });
-// صفحة الرئيسية - إعادة توجيه إلى /admin
-app.get('/', (req, res) => {
-    res.redirect('/admin');
-});
 
-// إذا كان المستخدم لم يسجل دخول، أرسل له صفحة بسيطة
-app.get('/admin', (req, res) => {
-    if (req.session.isLoggedIn) {
-        res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-    }
-});
 // بدء السيرفر
 app.listen(PORT, () => {
     console.log(`السيرفر يعمل على http://localhost:${PORT}`);
