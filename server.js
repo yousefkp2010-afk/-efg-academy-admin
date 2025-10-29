@@ -57,17 +57,24 @@ app.get('/admin', (req, res) => {
 });
 
 // معالجة طلب الدخول
+
 app.post('/admin/login', (req, res) => {
+    console.log('طلب دخول مستلم:', req.body);
+    
     const { username, password } = req.body;
     const users = readJSONFile('users.json');
+
+    console.log('المستخدمون الموجودون:', users);
 
     const admin = users.admins.find(a => a.username === username && a.password === password);
     
     if (admin) {
         req.session.isLoggedIn = true;
         req.session.username = username;
+        console.log('تم تسجيل الدخول بنجاح للمستخدم:', username);
         res.json({ success: true });
     } else {
+        console.log('فشل تسجيل الدخول:', username);
         res.json({ success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
     }
 });
