@@ -14,9 +14,6 @@ app.use(bodyParser.json());
 // الموقع الأصلي - يظهر عند الدخول على /
 app.use('/', express.static(path.join(__dirname, 'main-site')));
 
-// لوحة التحكم - تظهر فقط عند الدخول على /admin
-app.use('/admin', express.static(path.join(__dirname, 'public')));
-
 // جلسات المستخدم
 app.use(session({
     secret: 'efg-academy-secret',
@@ -52,6 +49,15 @@ app.post('/admin/login', (req, res) => {
     } else {
         res.json({ success: false, message: 'خطأ في الدخول' });
     }
+});
+
+// ⭐⭐ هذان السطران المهمان ⭐⭐
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // بدء السيرفر
