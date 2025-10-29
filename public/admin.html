@@ -136,9 +136,10 @@
                     if (result.success) {
                         showMessage('تم الدخول بنجاح! جاري التوجيه...', 'success');
                         setTimeout(() => {
-                            window.location.href = '/admin';
+                            // استخدم التوجيه الذي يعطيه السيرفر
+                            window.location.href = result.redirect || '/admin/dashboard';
                         }, 1000);
-                    } else {
+                    }else {
                         showMessage(result.message || 'اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
                         resetForm();
                     }
