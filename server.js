@@ -422,12 +422,6 @@ app.delete('/admin/api/notifications/:id', (req, res) => {
     }
 });
 
-// API للحصول على إشعارات غير مقروءة (للواجهة الرئيسية)
-app.get('/api/notifications/unread', (req, res) => {
-    const content = readJSONFile('content.json');
-    const unreadNotifications = (content.notifications || []).filter(n => !n.read).slice(0, 5);
-    res.json(unreadNotifications);
-});
 app.delete('/admin/api/notifications/:id', (req, res) => {
     const content = readJSONFile('content.json');
     const notificationId = parseInt(req.params.id);
@@ -450,7 +444,12 @@ app.delete('/admin/api/notifications/:id', (req, res) => {
 app.get('/health-check', (req, res) => {
   res.status(200).json({ status: 'OK', time: new Date() });
 });
-
+// API للحصول على إشعارات غير مقروءة (للواجهة الرئيسية)
+app.get('/api/notifications/unread', (req, res) => {
+    const content = readJSONFile('content.json');
+    const unreadNotifications = (content.notifications || []).filter(n => !n.read).slice(0, 5);
+    res.json(unreadNotifications);
+});
 // بدء السيرفر
 app.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على البورت ${PORT}`);

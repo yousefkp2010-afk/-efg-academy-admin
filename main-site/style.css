@@ -1,5 +1,101 @@
 /* css/style.css */
+/* أنماط الإشعارات */
+.notification-badge {
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    margin-right: 5px;
+    display: none;
+}
 
+.notifications-popup {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+
+.notification-item {
+    transition: background-color 0.3s ease;
+}
+
+.notification-item:hover {
+    background-color: #f8fafc;
+}
+
+/* أنماط التبويبات في لوحة التحكم */
+.nav-notifications {
+    position: relative;
+}
+
+/* تحسينات عامة */
+.lessons-section-title {
+    text-align: center;
+    color: var(--primary-blue);
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+}
+
+.lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.lesson-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lesson-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.lesson-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.lesson-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.lesson-duration {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.lesson-content {
+    padding: 1.5rem;
+}
+
+.lesson-title {
+    color: var(--primary-blue);
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.lesson-description {
+    color: var(--gray);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
 :root {
     --primary-blue: #0d1b36;
     --accent-blue: #1e3a8a;
