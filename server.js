@@ -4,36 +4,13 @@ const MemoryStore = require('memorystore')(session);
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ⚙️ إعدادات الإيميل
-const EMAIL_CONFIG = {
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-        user: 'yousefkp2010@gmail.com',
-        pass: 'tlmc bgpj pphb ilvr'
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
-};
-
-// 📧 إنشاء موصل الإيميل
-const emailTransporter = nodemailer.createTransport(EMAIL_CONFIG);
-
-// التحقق من اتصال الإيميل عند بدء التشغيل
-emailTransporter.verify(function(error, success) {
-    if (error) {
-        console.log('❌ فشل في الاتصال بخادم الإيميل:', error);
-    } else {
-        console.log('✅ خادم الإيميل جاهز لإرسال الرسائل');
-    }
-});
+// 📧 إعدادات Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 📁 وظيفة إرسال النسخة الاحتياطية بالإيميل
 async function sendBackupEmail() {
@@ -42,13 +19,11 @@ async function sendBackupEmail() {
         
         const backupPath = path.join(__dirname, 'data', 'content.json');
         
-        // التأكد من وجود الملف
         if (!fs.existsSync(backupPath)) {
             console.log('❌ ملف content.json غير موجود');
             return false;
         }
         
-        // قراءة المحتوى للتأكد
         const fileContent = fs.readFileSync(backupPath, 'utf8');
         if (!fileContent) {
             console.log('❌ ملف content.json فارغ');
@@ -59,48 +34,43 @@ async function sendBackupEmail() {
         const fileSize = (fileStats.size / 1024).toFixed(2);
         
         console.log(`📊 حجم الملف: ${fileSize} KB`);
-        
-        const mailOptions = {
-            from: `"EFG Academy Backup" <${EMAIL_CONFIG.auth.user}>`,
-            to: EMAIL_CONFIG.auth.user,
-            subject: `نسخة احتياطية - ${new Date().toLocaleString('ar-EG')}`,
+        console.log('📤 جاري إرسال الإيميل عبر Resend...');
+
+        const { data, error } = await resend.emails.send({
+            from: 'EFG Academy <onboarding@resend.dev>',
+            to: ['yousefkp2010@gmail.com'],
+            subject: `نسخة احتياطية - ${new Date().toLocaleDateString('ar-EG')}`,
             html: `
-                <div dir="rtl">
-                    <h2>نسخة احتياطية تلقائية</h2>
-                    <p>تم إنشاء نسخة احتياطية من ملف content.json</p>
-                    <p><strong>الحجم:</strong> ${fileSize} KB</p>
-                    <p><strong>الوقت:</strong> ${new Date().toLocaleString('ar-EG')}</p>
-                    <p><strong>المنصة:</strong> EFG Academy</p>
+                <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2 style="color: #2E86AB;">🎓 نسخة احتياطية تلقائية - EFG Academy</h2>
+                    <p>تم إنشاء نسخة احتياطية من ملف content.json تلقائياً</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                        <p><strong>📁 الحجم:</strong> ${fileSize} KB</p>
+                        <p><strong>🕒 الوقت:</strong> ${new Date().toLocaleString('ar-EG')}</p>
+                        <p><strong>🔔 السبب:</strong> تعديل محتوى الموقع</p>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">هذه الرسالة تلقائية - لا ترد عليها</p>
                 </div>
             `,
             attachments: [
                 {
                     filename: `content_backup_${Date.now()}.json`,
-                    content: fileContent
+                    content: Buffer.from(fileContent).toString('base64')
                 }
             ]
-        };
+        });
 
-        console.log('📤 جاري إرسال الإيميل...');
-        const info = await emailTransporter.sendMail(mailOptions);
+        if (error) {
+            console.error('❌ فشل في إرسال الإيميل:', error);
+            return false;
+        }
+
         console.log('✅ تم إرسال الإيميل بنجاح!');
-        console.log('📨 معرف الرسالة:', info.messageId);
-        console.log('👤 المستلم:', mailOptions.to);
-        
+        console.log('📨 معرف الرسالة:', data.id);
         return true;
         
     } catch (error) {
-        console.error('❌ فشل في إرسال الإيميل:');
-        console.error('🔴 الخطأ:', error.message);
-        
-        if (error.response) {
-            console.error('🔴 استجابة الخادم:', error.response);
-        }
-        
-        if (error.responseCode) {
-            console.error('🔴 كود الاستجابة:', error.responseCode);
-        }
-        
+        console.error('❌ فشل في إرسال الإيميل:', error.message);
         return false;
     }
 }
@@ -111,7 +81,6 @@ function createLocalBackup() {
         const content = readJSONFile('content.json');
         const backupDir = path.join(__dirname, 'backups');
         
-        // إنشاء مجلد النسخ الاحتياطية إذا لم يكن موجوداً
         if (!fs.existsSync(backupDir)) {
             fs.mkdirSync(backupDir, { recursive: true });
         }
@@ -170,18 +139,16 @@ function writeJSONFile(filename, data) {
         if (filename === 'content.json') {
             console.log('🔄 إنشاء نسخة احتياطية...');
             
-            // إنشاء نسخة محلية
+            // إنشاء نسخة محلية أولاً
             createLocalBackup();
             
-            // إرسال نسخة بالإيميل (تلقائياً في الخلفية)
+            // ثم إرسال نسخة بالإيميل
             sendBackupEmail().then(success => {
                 if (success) {
                     console.log('🎉 اكتملت عملية النسخ الاحتياطي بنجاح');
                 } else {
                     console.log('⚠️ اكتملت النسخة المحلية لكن فشل إرسال الإيميل');
                 }
-            }).catch(error => {
-                console.error('❌ خطأ غير متوقع في النسخ الاحتياطي:', error);
             });
         }
         
@@ -439,5 +406,5 @@ app.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على البورت ${PORT}`);
     console.log(`🌐 الموقع الرئيسي: http://localhost:${PORT}`);
     console.log(`⚙️ لوحة التحكم: http://localhost:${PORT}/admin`);
-    console.log(`📧 نظام النسخ الاحتياطي جاهز`);
+    console.log(`📧 نظام النسخ الاحتياطي مع Resend جاهز`);
 });
