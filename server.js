@@ -4,9 +4,73 @@ const MemoryStore = require('memorystore')(session);
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ⚙️ إعدادات الإيميل (عدل هذه البيانات)
+const EMAIL_CONFIG = {
+    service: 'gmail',
+    auth: {
+        user: 'yousefkp2010@gmail.com',
+        pass: 'tlmc bgpj pphb ilvr'  // كلمة مرور التطبيقات التي حصلت عليها
+    }
+};
+// 📧 إنشاء موصل الإيميل
+const emailTransporter = nodemailer.createTransporter(EMAIL_CONFIG);
+
+// 📁 وظيفة إرسال النسخة الاحتياطية بالإيميل
+async function sendBackupEmail() {
+    try {
+        const backupPath = path.join(__dirname, 'data', 'content.json');
+        const fileStats = fs.statSync(backupPath);
+        const fileSize = (fileStats.size / 1024).toFixed(2); // الحجم بالكيلوبايت
+        
+        const mailOptions = {
+            from: EMAIL_CONFIG.auth.user,
+            to: EMAIL_CONFIG.auth.user, // يرسل لنفسه أو غيره
+            subject: `نسخة احتياطية - ${new Date().toLocaleString('ar-EG')}`,
+            text: `تم إنشاء نسخة احتياطية تلقائية من ملف content.json\nالحجم: ${fileSize} KB\nالوقت: ${new Date().toLocaleString('ar-EG')}`,
+            attachments: [
+                {
+                    filename: `content_backup_${Date.now()}.json`,
+                    path: backupPath
+                }
+            ]
+        };
+
+        await emailTransporter.sendMail(mailOptions);
+        console.log('✅ تم إرسال النسخة الاحتياطية بالإيميل بنجاح');
+        return true;
+    } catch (error) {
+        console.error('❌ خطأ في إرسال النسخة الاحتياطية:', error.message);
+        return false;
+    }
+}
+
+// 📁 وظيفة حفظ نسخة محلية احتياطية
+function createLocalBackup() {
+    try {
+        const content = readJSONFile('content.json');
+        const backupDir = path.join(__dirname, 'backups');
+        
+        // إنشاء مجلد النسخ الاحتياطية إذا لم يكن موجوداً
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir);
+        }
+        
+        const backupFileName = `content_backup_${Date.now()}.json`;
+        const backupPath = path.join(backupDir, backupFileName);
+        
+        fs.writeFileSync(backupPath, JSON.stringify(content, null, 2));
+        console.log(`✅ تم إنشاء نسخة محلية: ${backupFileName}`);
+        return true;
+    } catch (error) {
+        console.error('❌ خطأ في إنشاء النسخة المحلية:', error);
+        return false;
+    }
+}
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -45,6 +109,18 @@ function readJSONFile(filename) {
 function writeJSONFile(filename, data) {
     try {
         fs.writeFileSync(path.join(__dirname, 'data', filename), JSON.stringify(data, null, 2));
+        
+        // 📧 إرسال نسخة احتياطية إذا كان الملف هو content.json
+        if (filename === 'content.json') {
+            console.log('🔄 إنشاء نسخة احتياطية...');
+            
+            // إنشاء نسخة محلية
+            createLocalBackup();
+            
+            // إرسال نسخة بالإيميل (تلقائياً في الخلفية)
+            sendBackupEmail().catch(console.error);
+        }
+        
         return true;
     } catch (error) {
         console.log('خطأ في كتابة الملف:', filename);
@@ -163,6 +239,7 @@ app.post('/admin/api/courses', (req, res) => {
 
     if (!content.courses) content.courses = {};
     if (!content.courses[language]) content.courses[language] = {};
+    if (!content.courses[language][level]) content.courses[language][level] = {};
 
     content.courses[language][level] = courseData;
     
@@ -287,13 +364,16 @@ app.delete('/admin/api/notifications/:id', (req, res) => {
         res.json({ success: false, error: 'لا توجد إشعارات' });
     }
 });
+
 // Health check route
 app.get('/health-check', (req, res) => {
   res.status(200).json({ status: 'OK', time: new Date() });
 });
+
 // بدء السيرفر
 app.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على البورت ${PORT}`);
     console.log(`🌐 الموقع الرئيسي: http://localhost:${PORT}`);
     console.log(`⚙️ لوحة التحكم: http://localhost:${PORT}/admin`);
+    console.log(`📧 نظام النسخ الاحتياطي جاهز`);
 });
