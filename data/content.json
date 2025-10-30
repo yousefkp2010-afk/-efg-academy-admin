@@ -1,54 +1,14 @@
 {
-  "news": [
-    {
-      "id": 1761754308571,
-      "title": "خبر تجريبي 1",
-      "description": "مرحبا",
-      "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Fcreativeschoolarabia.com%2F%25D8%25B5%25D9%2588%25D8%25B1%25D8%25A9-%25D9%2584%25D9%2584%25D9%2582%25D9%2585%25D8%25B1-50-%25D8%25A7%25D9%2584%25D9%2581-%25D9%2581%25D9%2588%25D8%25AA%25D9%2588%25D8%25B4%25D9%2588%25D8%25A8%2F&psig=AOvVaw1z_hnv8gNRdOCF1f2tJre9&ust=1761840687518000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCJCsyZbmyZADFQAAAAAdAAAAABAE",
-      "type": "إطلاق",
-      "date": "2025-10-29",
-      "urgent": false
-    },
-    {
-      "id": 1,
-      "date": "2024-01-20",
-      "title": "إطلاق المنصة الجديدة",
-      "description": "تم إطلاق منصة EFG Academy بنجاح مع جميع المميزات",
-      "image": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=250&fit=crop",
-      "type": "إطلاق",
-      "urgent": true
-    }
-  ],
+  "news": [],
   "courses": {
     "english": {},
     "german": {},
-    "french": {
-      "C2": {
-        "title": "مستوى جديد",
-        "description": "صعب",
-        "youtubeLink": "#",
-        "telegramGroup": "#",
-        "image": "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=300&fit=crop",
-        "status": "مكتمل"
-      }
-    }
+    "french": {}
   },
   "lessons": {
     "english": {},
     "german": {},
-    "french": {
-      "C2": [
-        {
-          "id": 1761755040796,
-          "title": "درس جديد",
-          "description": "صعب ",
-          "youtubeLink": "https://www.youtube.com/watch?v=english_a1_1",
-          "image": "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=250&fit=crop",
-          "duration": "15:30",
-          "order": 1
-        }
-      ]
-    }
+    "french": {}
   },
   "notifications": []
 }

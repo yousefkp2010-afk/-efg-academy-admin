@@ -18,7 +18,7 @@ const EMAIL_CONFIG = {
     }
 };
 // 📧 إنشاء موصل الإيميل
-const emailTransporter = nodemailer.createTransporter(EMAIL_CONFIG);
+const emailTransporter = nodemailer.createTransport(EMAIL_CONFIG);
 
 // 📁 وظيفة إرسال النسخة الاحتياطية بالإيميل
 async function sendBackupEmail() {
