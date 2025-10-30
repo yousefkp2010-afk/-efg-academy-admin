@@ -287,7 +287,10 @@ app.delete('/admin/api/notifications/:id', (req, res) => {
         res.json({ success: false, error: 'لا توجد إشعارات' });
     }
 });
-
+// Health check route
+app.get('/health-check', (req, res) => {
+  res.status(200).json({ status: 'OK', time: new Date() });
+});
 // بدء السيرفر
 app.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على البورت ${PORT}`);
