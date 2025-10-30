@@ -9,42 +9,98 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ⚙️ إعدادات الإيميل (عدل هذه البيانات)
+// ⚙️ إعدادات الإيميل
 const EMAIL_CONFIG = {
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
         user: 'yousefkp2010@gmail.com',
-        pass: 'tlmc bgpj pphb ilvr'  // كلمة مرور التطبيقات التي حصلت عليها
+        pass: 'tlmc bgpj pphb ilvr'
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 };
+
 // 📧 إنشاء موصل الإيميل
 const emailTransporter = nodemailer.createTransport(EMAIL_CONFIG);
+
+// التحقق من اتصال الإيميل عند بدء التشغيل
+emailTransporter.verify(function(error, success) {
+    if (error) {
+        console.log('❌ فشل في الاتصال بخادم الإيميل:', error);
+    } else {
+        console.log('✅ خادم الإيميل جاهز لإرسال الرسائل');
+    }
+});
 
 // 📁 وظيفة إرسال النسخة الاحتياطية بالإيميل
 async function sendBackupEmail() {
     try {
+        console.log('🔄 بدء عملية النسخ الاحتياطي بالإيميل...');
+        
         const backupPath = path.join(__dirname, 'data', 'content.json');
+        
+        // التأكد من وجود الملف
+        if (!fs.existsSync(backupPath)) {
+            console.log('❌ ملف content.json غير موجود');
+            return false;
+        }
+        
+        // قراءة المحتوى للتأكد
+        const fileContent = fs.readFileSync(backupPath, 'utf8');
+        if (!fileContent) {
+            console.log('❌ ملف content.json فارغ');
+            return false;
+        }
+        
         const fileStats = fs.statSync(backupPath);
-        const fileSize = (fileStats.size / 1024).toFixed(2); // الحجم بالكيلوبايت
+        const fileSize = (fileStats.size / 1024).toFixed(2);
+        
+        console.log(`📊 حجم الملف: ${fileSize} KB`);
         
         const mailOptions = {
-            from: EMAIL_CONFIG.auth.user,
-            to: EMAIL_CONFIG.auth.user, // يرسل لنفسه أو غيره
+            from: `"EFG Academy Backup" <${EMAIL_CONFIG.auth.user}>`,
+            to: EMAIL_CONFIG.auth.user,
             subject: `نسخة احتياطية - ${new Date().toLocaleString('ar-EG')}`,
-            text: `تم إنشاء نسخة احتياطية تلقائية من ملف content.json\nالحجم: ${fileSize} KB\nالوقت: ${new Date().toLocaleString('ar-EG')}`,
+            html: `
+                <div dir="rtl">
+                    <h2>نسخة احتياطية تلقائية</h2>
+                    <p>تم إنشاء نسخة احتياطية من ملف content.json</p>
+                    <p><strong>الحجم:</strong> ${fileSize} KB</p>
+                    <p><strong>الوقت:</strong> ${new Date().toLocaleString('ar-EG')}</p>
+                    <p><strong>المنصة:</strong> EFG Academy</p>
+                </div>
+            `,
             attachments: [
                 {
                     filename: `content_backup_${Date.now()}.json`,
-                    path: backupPath
+                    content: fileContent
                 }
             ]
         };
 
-        await emailTransporter.sendMail(mailOptions);
-        console.log('✅ تم إرسال النسخة الاحتياطية بالإيميل بنجاح');
+        console.log('📤 جاري إرسال الإيميل...');
+        const info = await emailTransporter.sendMail(mailOptions);
+        console.log('✅ تم إرسال الإيميل بنجاح!');
+        console.log('📨 معرف الرسالة:', info.messageId);
+        console.log('👤 المستلم:', mailOptions.to);
+        
         return true;
+        
     } catch (error) {
-        console.error('❌ خطأ في إرسال النسخة الاحتياطية:', error.message);
+        console.error('❌ فشل في إرسال الإيميل:');
+        console.error('🔴 الخطأ:', error.message);
+        
+        if (error.response) {
+            console.error('🔴 استجابة الخادم:', error.response);
+        }
+        
+        if (error.responseCode) {
+            console.error('🔴 كود الاستجابة:', error.responseCode);
+        }
+        
         return false;
     }
 }
@@ -57,7 +113,7 @@ function createLocalBackup() {
         
         // إنشاء مجلد النسخ الاحتياطية إذا لم يكن موجوداً
         if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir);
+            fs.mkdirSync(backupDir, { recursive: true });
         }
         
         const backupFileName = `content_backup_${Date.now()}.json`;
@@ -118,7 +174,15 @@ function writeJSONFile(filename, data) {
             createLocalBackup();
             
             // إرسال نسخة بالإيميل (تلقائياً في الخلفية)
-            sendBackupEmail().catch(console.error);
+            sendBackupEmail().then(success => {
+                if (success) {
+                    console.log('🎉 اكتملت عملية النسخ الاحتياطي بنجاح');
+                } else {
+                    console.log('⚠️ اكتملت النسخة المحلية لكن فشل إرسال الإيميل');
+                }
+            }).catch(error => {
+                console.error('❌ خطأ غير متوقع في النسخ الاحتياطي:', error);
+            });
         }
         
         return true;
