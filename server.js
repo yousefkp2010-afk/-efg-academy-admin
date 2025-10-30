@@ -353,6 +353,8 @@ app.delete('/admin/api/lessons/:language/:level/:id', (req, res) => {
 });
 
 // APIs للإشعارات
+
+// APIs للإشعارات
 app.get('/admin/api/notifications', (req, res) => {
     const content = readJSONFile('content.json');
     res.json(content.notifications || []);
@@ -363,7 +365,8 @@ app.post('/admin/api/notifications', (req, res) => {
     const newNotification = {
         id: Date.now(),
         ...req.body,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        read: false
     };
 
     if (!content.notifications) content.notifications = [];
@@ -378,6 +381,53 @@ app.post('/admin/api/notifications', (req, res) => {
     }
 });
 
+app.put('/admin/api/notifications/:id/read', (req, res) => {
+    const content = readJSONFile('content.json');
+    const notificationId = parseInt(req.params.id);
+    
+    if (content.notifications) {
+        const notification = content.notifications.find(n => n.id === notificationId);
+        if (notification) {
+            notification.read = true;
+            const success = writeJSONFile('content.json', content);
+            
+            if (success) {
+                res.json({ success: true });
+            } else {
+                res.json({ success: false, error: 'فشل في تحديث الإشعار' });
+            }
+        } else {
+            res.json({ success: false, error: 'الإشعار غير موجود' });
+        }
+    } else {
+        res.json({ success: false, error: 'لا توجد إشعارات' });
+    }
+});
+
+app.delete('/admin/api/notifications/:id', (req, res) => {
+    const content = readJSONFile('content.json');
+    const notificationId = parseInt(req.params.id);
+    
+    if (content.notifications) {
+        content.notifications = content.notifications.filter(item => item.id !== notificationId);
+        const success = writeJSONFile('content.json', content);
+        
+        if (success) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false, error: 'فشل في حذف الإشعار' });
+        }
+    } else {
+        res.json({ success: false, error: 'لا توجد إشعارات' });
+    }
+});
+
+// API للحصول على إشعارات غير مقروءة (للواجهة الرئيسية)
+app.get('/api/notifications/unread', (req, res) => {
+    const content = readJSONFile('content.json');
+    const unreadNotifications = (content.notifications || []).filter(n => !n.read).slice(0, 5);
+    res.json(unreadNotifications);
+});
 app.delete('/admin/api/notifications/:id', (req, res) => {
     const content = readJSONFile('content.json');
     const notificationId = parseInt(req.params.id);
