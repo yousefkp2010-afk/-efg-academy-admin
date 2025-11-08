@@ -1141,3 +1141,38 @@ section {
 .notification-popup {
     animation: slideIn 0.3s ease;
 }
+/* أنيميشن للنوافذ المنبثقة */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.notification-popup {
+    animation: slideIn 0.3s ease;
+}
+
+.notification-badge {
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    margin-right: 5px;
+}
