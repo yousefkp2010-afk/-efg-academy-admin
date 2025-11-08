@@ -454,11 +454,16 @@ app.get('/api/notifications/unread', (req, res) => {
 
 // API للحصول على جميع الإشعارات (للواجهة الرئيسية)
 app.get('/api/notifications', (req, res) => {
-    const content = readJSONFile('content.json');
-    const allNotifications = content.notifications || [];
-    res.json(allNotifications);
+    try {
+        const content = readJSONFile('content.json');
+        const allNotifications = content.notifications || [];
+        console.log('📨 إرجاع الإشعارات:', allNotifications.length);
+        res.json(allNotifications);
+    } catch (error) {
+        console.error('❌ خطأ في API الإشعارات:', error);
+        res.json([]);
+    }
 });
-
 
 // بدء السيرفر
 app.listen(PORT, () => {
