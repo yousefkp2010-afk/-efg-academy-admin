@@ -450,12 +450,17 @@ app.get('/api/notifications/unread', (req, res) => {
     const unreadNotifications = (content.notifications || []).filter(n => !n.read).slice(0, 5);
     res.json(unreadNotifications);
 });
+
+
 // API للحصول على جميع الإشعارات (للواجهة الرئيسية)
 app.get('/api/notifications', (req, res) => {
     const content = readJSONFile('content.json');
     const allNotifications = content.notifications || [];
     res.json(allNotifications);
-});// بدء السيرفر
+});
+
+
+// بدء السيرفر
 app.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على البورت ${PORT}`);
     console.log(`🌐 الموقع الرئيسي: http://localhost:${PORT}`);

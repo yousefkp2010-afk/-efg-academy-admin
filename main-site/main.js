@@ -1,4 +1,7 @@
-// js/main.js - الملف المحدث الكامل
+// js/main.js - الملف المحدث مع إصلاح الإشعارات
+
+// متغير لتتبع الإشعارات المعروضة
+let displayedNotifications = new Set();
 
 // تهيئة التطبيق عند تحميل الصفحة
 async function loadData() {
@@ -10,6 +13,41 @@ async function loadData() {
         console.error('❌ فشل في تحميل البيانات:', error);
         window.efgData = { news: [], courses: {}, lessons: {}, notifications: [] };
     }
+}
+
+// تحميل الإشعارات المعروضة مسبقاً من localStorage
+function loadDisplayedNotifications() {
+    try {
+        const saved = localStorage.getItem('efg_displayed_notifications');
+        if (saved) {
+            displayedNotifications = new Set(JSON.parse(saved));
+        }
+        console.log('📋 الإشعارات المعروضة مسبقاً:', Array.from(displayedNotifications));
+    } catch (error) {
+        console.error('❌ خطأ في تحميل الإشعارات المعروضة:', error);
+        displayedNotifications = new Set();
+    }
+}
+
+// حفظ الإشعارات المعروضة في localStorage
+function saveDisplayedNotifications() {
+    try {
+        const toSave = Array.from(displayedNotifications);
+        localStorage.setItem('efg_displayed_notifications', JSON.stringify(toSave));
+    } catch (error) {
+        console.error('❌ خطأ في حفظ الإشعارات المعروضة:', error);
+    }
+}
+
+// التحقق مما إذا كان الإشعار معروضاً مسبقاً
+function isNotificationDisplayed(notificationId) {
+    return displayedNotifications.has(notificationId.toString());
+}
+
+// وضع علامة على الإشعار كمعروض
+function markNotificationAsDisplayed(notificationId) {
+    displayedNotifications.add(notificationId.toString());
+    saveDisplayedNotifications();
 }
 
 // تحميل الإشعارات من السيرفر
@@ -26,9 +64,17 @@ async function loadNotificationsFromServer() {
         console.log('📨 الإشعارات المستلمة:', serverNotifications);
         
         if (serverNotifications && serverNotifications.length > 0) {
-            serverNotifications.forEach(notification => {
-                if (window.notificationSystem && !isNotificationExists(notification.id)) {
-                    addServerNotification(notification);
+            // تصفية الإشعارات الجديدة فقط
+            const newNotifications = serverNotifications.filter(notification => 
+                !isNotificationDisplayed(notification.id)
+            );
+            
+            console.log('🆕 الإشعارات الجديدة:', newNotifications.length);
+            
+            // عرض الإشعارات الجديدة فقط
+            newNotifications.forEach(notification => {
+                if (window.notificationSystem) {
+                    showServerNotification(notification);
                 }
             });
             
@@ -44,22 +90,21 @@ async function loadNotificationsFromServer() {
     }
 }
 
-// التحقق من وجود الإشعار مسبقاً
-function isNotificationExists(notificationId) {
-    if (!window.notificationSystem) return false;
-    const existingNotifications = window.notificationSystem.getAllNotifications();
-    return existingNotifications.some(notif => notif.id === notificationId);
-}
-
-// إضافة إشعار من السيرفر
-function addServerNotification(serverNotification) {
+// عرض إشعار من السيرفر
+function showServerNotification(serverNotification) {
     if (!window.notificationSystem) {
         console.log('⚠️ نظام الإشعارات غير جاهز بعد');
         return;
     }
     
-    console.log('➕ إضافة إشعار من السيرفر:', serverNotification.title);
+    console.log('➕ عرض إشعار جديد:', serverNotification.title);
     
+    // إذا كان الإشعار مهماً ويجب عرضه كمنبثق
+    if (serverNotification.important && serverNotification.showPopup) {
+        showNotificationPopup(serverNotification);
+    }
+    
+    // إضافة الإشعار للنظام المحلي
     window.notificationSystem.addSimpleNotification(
         serverNotification.title,
         serverNotification.message,
@@ -70,6 +115,74 @@ function addServerNotification(serverNotification) {
             persistent: false
         }
     );
+    
+    // وضع علامة على الإشعار كمعروض
+    markNotificationAsDisplayed(serverNotification.id);
+}
+
+// عرض نافذة منبثقة للإشعار المهم
+function showNotificationPopup(notification) {
+    const popup = document.createElement('div');
+    popup.className = 'notification-popup';
+    popup.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        z-index: 10000;
+        width: 350px;
+        border-right: 5px solid ${getNotificationColor(notification.type)};
+        animation: slideIn 0.3s ease;
+    `;
+    
+    popup.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">${getNotificationIcon(notification.type)}</span>
+                <h4 style="margin: 0; color: var(--primary-blue);">${notification.title}</h4>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #666;">✕</button>
+        </div>
+        <p style="margin: 0; color: #666; line-height: 1.5;">${notification.message}</p>
+        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <small style="color: #999;">${new Date(notification.timestamp).toLocaleString('ar-EG')}</small>
+            ${notification.link && notification.link !== '#' ? 
+                `<a href="${notification.link}" style="color: var(--gold); text-decoration: none;">المزيد →</a>` : ''
+            }
+        </div>
+    `;
+    
+    document.body.appendChild(popup);
+    
+    // إزالة النافذة تلقائياً بعد 8 ثواني
+    setTimeout(() => {
+        if (popup.parentNode) {
+            popup.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.parentNode.removeChild(popup);
+                }
+            }, 300);
+        }
+    }, 8000);
+}
+
+// الحصول على لون الإشعار حسب النوع
+function getNotificationColor(type) {
+    const colors = {
+        'info': '#3b82f6',
+        'success': '#10b981',
+        'warning': '#f59e0b',
+        'error': '#ef4444',
+        'update': '#8b5cf6',
+        'event': '#ec4899',
+        'course': '#06b6d4',
+        'news': '#f97316'
+    };
+    return colors[type] || '#3b82f6';
 }
 
 // الحصول على أيقونة بناءً على النوع
@@ -96,6 +209,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function initializeApp() {
     console.log('⚙️ تهيئة التطبيق...');
+    
+    // تحميل الإشعارات المعروضة مسبقاً
+    loadDisplayedNotifications();
+    
     initNavigation();
     initLevelSystem();
     loadContent();
@@ -105,10 +222,10 @@ async function initializeApp() {
     // تحميل الإشعارات من السيرفر بعد تهيئة النظام
     setTimeout(async () => {
         await loadNotificationsFromServer();
-    }, 1000);
+    }, 1500);
 }
 
-// نظام التنقل
+// باقي الدوال تبقى كما هي (بدون تغيير)
 function initNavigation() {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
@@ -142,7 +259,6 @@ function initNavigation() {
     });
 }
 
-// نظام المستويات
 function initLevelSystem() {
     const levelButtons = document.querySelectorAll('.level-btn');
     
@@ -156,7 +272,6 @@ function initLevelSystem() {
     });
 }
 
-// تحديث نظام المستويات
 function selectLevel(language, level) {
     const userPreferences = {
         language: language,
@@ -183,7 +298,6 @@ function scrollToLessons() {
     }
 }
 
-// تحديث عرض المستوى المختار
 function updateSelectedLevelDisplay() {
     const preferences = getUserPreferences();
     if (!preferences) return;
@@ -210,7 +324,6 @@ function updateSelectedLevelDisplay() {
     });
 }
 
-// عرض الدروس للمستوى المختار
 function displayLessons(language, level) {
     const languageCode = getLanguageCode(language);
     const lessonsContainer = document.getElementById('lessons-container');
@@ -263,7 +376,6 @@ function displayLessons(language, level) {
     lessonsContainer.appendChild(lessonsGrid);
 }
 
-// دالة مساعدة للحصول على كود اللغة
 function getLanguageCode(languageName) {
     const languageMap = {
         'اللغة الإنجليزية': 'english',
@@ -273,7 +385,6 @@ function getLanguageCode(languageName) {
     return languageMap[languageName] || 'english';
 }
 
-// تحديث تحميل المحتوى
 function loadContent() {
     loadLevels();
     loadNews(); 
@@ -286,13 +397,11 @@ function loadContent() {
     }
 }
 
-// الحصول على تفضيلات المستخدم
 function getUserPreferences() {
     const preferences = localStorage.getItem('efg_user_preferences');
     return preferences ? JSON.parse(preferences) : null;
 }
 
-// التمرير السلس
 function initSmoothScroll() {
     const links = document.querySelectorAll('a[href^="#"]');
     
@@ -315,7 +424,6 @@ function initSmoothScroll() {
     });
 }
 
-// تحميل المستويات
 function loadLevels() {
     const languages = ['english', 'german', 'french'];
     
@@ -338,7 +446,6 @@ function loadLevels() {
     });
 }
 
-// تحميل الأخبار
 function loadNews() {
     const newsContainer = document.getElementById('news-container');
     if (!newsContainer) return;
@@ -360,7 +467,6 @@ function loadNews() {
     }
 }
 
-// إنشاء بطاقة خبر
 function createNewsCard(newsItem) {
     const card = document.createElement('div');
     card.className = 'news-card';
@@ -376,7 +482,6 @@ function createNewsCard(newsItem) {
     return card;
 }
 
-// تحميل روابط التواصل
 function loadContactLinks() {
     const youtubeLink = document.getElementById('youtube-link');
     const telegramLink = document.getElementById('telegram-link');
@@ -390,7 +495,6 @@ function loadContactLinks() {
     }
 }
 
-// إشعارات Toast
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
@@ -426,11 +530,9 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// نظام الإشعارات
 async function initNotifications() {
     console.log('🔔 تهيئة نظام الإشعارات...');
     
-    // انتظر حتى يتم تحميل نظام الإشعارات
     if (typeof notificationSystem === 'undefined') {
         console.log('⏳ انتظار تحميل نظام الإشعارات...');
         setTimeout(initNotifications, 500);
@@ -470,7 +572,7 @@ async function loadPopupNotifications() {
                     <div style="flex: 1;">
                         <div style="font-weight: bold; margin-bottom: 5px; color: var(--primary-blue);">
                             ${notification.title}
-                            ${notification.important ? ' <span style="color: red;">⭐</span>' : ''}
+                            ${notification.important ? ' <span style="color: red; font-size: 12px;">⭐ مهم</span>' : ''}
                         </div>
                         <div style="color: #666; margin-bottom: 5px;">${notification.message}</div>
                         <div style="font-size: 12px; color: #999;">
@@ -543,18 +645,6 @@ function createNotificationsButton() {
     console.log('✅ تم إنشاء زر الإشعارات');
 }
 
-async function updateNotificationBadgeFromServer() {
-    try {
-        const response = await fetch('/api/notifications');
-        const notifications = await response.json();
-        const unreadCount = notifications.filter(n => !n.read).length;
-        updateNotificationBadge(unreadCount);
-    } catch (error) {
-        console.error('❌ فشل في تحديث عداد الإشعارات:', error);
-        updateNotificationBadge(0);
-    }
-}
-
 function showNotificationsPopup() {
     const popup = document.createElement('div');
     popup.className = 'notifications-popup';
@@ -590,7 +680,6 @@ function showNotificationsPopup() {
     loadPopupNotifications();
 }
 
-// وظائف مساعدة
 function getLanguageName(langCode) {
     const languages = {
         'english': 'اللغة الإنجليزية',
@@ -637,4 +726,3 @@ window.addEventListener('load', function() {
 // جعل الدوال متاحة عالمياً
 window.loadPopupNotifications = loadPopupNotifications;
 window.showNotificationsPopup = showNotificationsPopup;
-window.updateNotificationBadgeFromServer = updateNotificationBadgeFromServer;
