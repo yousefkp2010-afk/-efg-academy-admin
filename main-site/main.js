@@ -1,28 +1,111 @@
-// js/main.js - الملف المحدث
+// js/main.js - الملف المحدث الكامل
 
 // تهيئة التطبيق عند تحميل الصفحة
 async function loadData() {
     try {
         const response = await fetch('/api/data');
         window.efgData = await response.json();
+        console.log('✅ تم تحميل البيانات:', window.efgData);
     } catch (error) {
-        // إذا فشل الاتصال، استخدم بيانات افتراضية
+        console.error('❌ فشل في تحميل البيانات:', error);
         window.efgData = { news: [], courses: {}, lessons: {}, notifications: [] };
     }
 }
 
+// تحميل الإشعارات من السيرفر
+async function loadNotificationsFromServer() {
+    try {
+        console.log('🔄 جاري تحميل الإشعارات من السيرفر...');
+        const response = await fetch('/api/notifications');
+        
+        if (!response.ok) {
+            throw new Error(`خطأ في السيرفر: ${response.status}`);
+        }
+        
+        const serverNotifications = await response.json();
+        console.log('📨 الإشعارات المستلمة:', serverNotifications);
+        
+        if (serverNotifications && serverNotifications.length > 0) {
+            serverNotifications.forEach(notification => {
+                if (window.notificationSystem && !isNotificationExists(notification.id)) {
+                    addServerNotification(notification);
+                }
+            });
+            
+            // تحديث العداد
+            updateNotificationBadge(serverNotifications.filter(n => !n.read).length);
+        } else {
+            console.log('ℹ️ لا توجد إشعارات في السيرفر');
+            updateNotificationBadge(0);
+        }
+    } catch (error) {
+        console.error('❌ فشل في تحميل الإشعارات من السيرفر:', error);
+        updateNotificationBadge(0);
+    }
+}
+
+// التحقق من وجود الإشعار مسبقاً
+function isNotificationExists(notificationId) {
+    if (!window.notificationSystem) return false;
+    const existingNotifications = window.notificationSystem.getAllNotifications();
+    return existingNotifications.some(notif => notif.id === notificationId);
+}
+
+// إضافة إشعار من السيرفر
+function addServerNotification(serverNotification) {
+    if (!window.notificationSystem) {
+        console.log('⚠️ نظام الإشعارات غير جاهز بعد');
+        return;
+    }
+    
+    console.log('➕ إضافة إشعار من السيرفر:', serverNotification.title);
+    
+    window.notificationSystem.addSimpleNotification(
+        serverNotification.title,
+        serverNotification.message,
+        {
+            type: serverNotification.type || 'info',
+            icon: getNotificationIcon(serverNotification.type),
+            link: serverNotification.link || '#',
+            persistent: false
+        }
+    );
+}
+
+// الحصول على أيقونة بناءً على النوع
+function getNotificationIcon(type) {
+    const icons = {
+        'info': 'ℹ️',
+        'success': '✅', 
+        'warning': '⚠️',
+        'error': '❌',
+        'update': '🔄',
+        'event': '🎉',
+        'course': '📚',
+        'news': '📰'
+    };
+    return icons[type] || '🔔';
+}
+
 // بدء التطبيق بعد تحميل البيانات
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 بدء تحميل التطبيق...');
     await loadData();
-    initializeApp();
+    await initializeApp();
 });
 
-function initializeApp() {
+async function initializeApp() {
+    console.log('⚙️ تهيئة التطبيق...');
     initNavigation();
     initLevelSystem();
     loadContent();
     initNotifications();
     initSmoothScroll();
+    
+    // تحميل الإشعارات من السيرفر بعد تهيئة النظام
+    setTimeout(async () => {
+        await loadNotificationsFromServer();
+    }, 1000);
 }
 
 // نظام التنقل
@@ -31,7 +114,6 @@ function initNavigation() {
     const navMenu = document.querySelector('.nav-menu');
     const navLinks = document.querySelectorAll('.nav-link');
 
-    // toggle قائمة الهواتف
     if (hamburger) {
         hamburger.addEventListener('click', function() {
             hamburger.classList.toggle('active');
@@ -39,7 +121,6 @@ function initNavigation() {
         });
     }
 
-    // إغلاق القائمة عند النقر على رابط
     navLinks.forEach(link => {
         link.addEventListener('click', function() {
             if (hamburger) {
@@ -49,7 +130,6 @@ function initNavigation() {
         });
     });
 
-    // تغيير لون الشريط عند التمرير
     window.addEventListener('scroll', function() {
         const navbar = document.querySelector('.navbar');
         if (navbar && window.scrollY > 100) {
@@ -71,8 +151,6 @@ function initLevelSystem() {
             const languageCard = this.closest('.language-card');
             const language = languageCard.querySelector('h3').textContent;
             const level = this.textContent;
-            
-            // اختيار المستوى مباشرة
             selectLevel(language, level);
         });
     });
@@ -80,7 +158,6 @@ function initLevelSystem() {
 
 // تحديث نظام المستويات
 function selectLevel(language, level) {
-    // حفظ في localStorage مع اللغة المحددة
     const userPreferences = {
         language: language,
         level: level,
@@ -89,15 +166,9 @@ function selectLevel(language, level) {
     };
     
     localStorage.setItem('efg_user_preferences', JSON.stringify(userPreferences));
-    
-    // عرض إشعار
     showToast(`تم اختيار ${language} - المستوى ${level}`, 'success');
-    
-    // تحديث الواجهة وعرض الدروس
     updateSelectedLevelDisplay();
     displayLessons(language, level);
-    
-    // التمرير إلى قسم الدروس
     scrollToLessons();
 }
 
@@ -117,14 +188,12 @@ function updateSelectedLevelDisplay() {
     const preferences = getUserPreferences();
     if (!preferences) return;
     
-    // إعادة تعيين جميع الأزرار
     document.querySelectorAll('.level-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.style.background = '';
         btn.style.color = '';
     });
     
-    // تلوين الزر المختار في اللغة المحددة فقط
     const languageCards = document.querySelectorAll('.language-card');
     languageCards.forEach(card => {
         const cardLanguage = card.querySelector('h3').textContent;
@@ -148,10 +217,8 @@ function displayLessons(language, level) {
     
     if (!lessonsContainer) return;
     
-    // مسح المحتوى السابق
     lessonsContainer.innerHTML = '';
     
-    // البحث عن الدروس المناسبة
     const lessons = window.efgData.lessons?.[languageCode]?.[level] || [];
     
     if (lessons.length === 0) {
@@ -164,13 +231,11 @@ function displayLessons(language, level) {
         return;
     }
     
-    // إضافة عنوان القسم
     const sectionTitle = document.createElement('h2');
     sectionTitle.className = 'lessons-section-title';
     sectionTitle.textContent = `دروس ${language} - المستوى ${level}`;
     lessonsContainer.appendChild(sectionTitle);
     
-    // إنشاء بطاقات الدروس
     const lessonsGrid = document.createElement('div');
     lessonsGrid.className = 'lessons-grid';
     
@@ -215,7 +280,6 @@ function loadContent() {
     loadContactLinks();
     updateSelectedLevelDisplay();
     
-    // تحميل الدروس إذا كان هناك تفضيلات محفوظة
     const preferences = getUserPreferences();
     if (preferences) {
         displayLessons(preferences.language, preferences.level);
@@ -227,7 +291,6 @@ function getUserPreferences() {
     const preferences = localStorage.getItem('efg_user_preferences');
     return preferences ? JSON.parse(preferences) : null;
 }
-
 
 // التمرير السلس
 function initSmoothScroll() {
@@ -243,7 +306,6 @@ function initSmoothScroll() {
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
                 const offsetTop = targetElement.offsetTop - 80;
-                
                 window.scrollTo({
                     top: offsetTop,
                     behavior: 'smooth'
@@ -281,25 +343,20 @@ function loadNews() {
     const newsContainer = document.getElementById('news-container');
     if (!newsContainer) return;
     
-    if (window.efgData && window.efgData.news) {
+    newsContainer.innerHTML = '';
+    
+    if (window.efgData && window.efgData.news && window.efgData.news.length > 0) {
         window.efgData.news.forEach(newsItem => {
             const newsCard = createNewsCard(newsItem);
             newsContainer.appendChild(newsCard);
         });
     } else {
-        // بيانات افتراضية
-        const defaultNews = [
-            {
-                date: '2024-01-15',
-                title: 'إطلاق كورس الألمانية A1.1 المجاني',
-                description: 'تم إطلاق الكورس المجاني لتعلم اللغة الألمانية للمستوى A1.1'
-            }
-        ];
-        
-        defaultNews.forEach(newsItem => {
-            const newsCard = createNewsCard(newsItem);
-            newsContainer.appendChild(newsCard);
-        });
+        newsContainer.innerHTML = `
+            <div class="no-news">
+                <h3>📰 لا توجد أخبار حالياً</h3>
+                <p>سيتم إضافة الأخبار والمسابقات قريباً</p>
+            </div>
+        `;
     }
 }
 
@@ -325,12 +382,11 @@ function loadContactLinks() {
     const telegramLink = document.getElementById('telegram-link');
     
     if (window.efgData && window.efgData.contact) {
-        if (youtubeLink) youtubeLink.href = window.efgData.contact.youtube;
-        if (telegramLink) telegramLink.href = window.efgData.contact.telegram;
+        if (youtubeLink) youtubeLink.href = window.efgData.contact.youtube || '#';
+        if (telegramLink) telegramLink.href = window.efgData.contact.telegram || '#';
     } else {
-        // روابط افتراضية
-        if (youtubeLink) youtubeLink.href = 'https://youtube.com/c/EFGAcademy';
-        if (telegramLink) telegramLink.href = 'https://t.me/EFGAcademy';
+        if (youtubeLink) youtubeLink.href = 'https://youtube.com';
+        if (telegramLink) telegramLink.href = 'https://t.me';
     }
 }
 
@@ -356,12 +412,10 @@ function showToast(message, type = 'info') {
     
     document.body.appendChild(toast);
     
-    // إظهار الإشعار
     setTimeout(() => {
         toast.style.transform = 'translateX(0)';
     }, 100);
     
-    // إخفاء الإشعار بعد 3 ثواني
     setTimeout(() => {
         toast.style.transform = 'translateX(400px)';
         setTimeout(() => {
@@ -372,34 +426,71 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// وظائف مساعدة
-function getLanguageName(langCode) {
-    const languages = {
-        'english': 'اللغة الإنجليزية',
-        'german': 'اللغة الألمانية', 
-        'french': 'اللغة الفرنسية'
-    };
-    return languages[langCode] || langCode;
-}
-
-function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('ar-EG', options);
-}
-
-// نظام الإشعارات - النسخة الجديدة المبسطة
+// نظام الإشعارات
 async function initNotifications() {
-    await loadNotificationsFromServer();
+    console.log('🔔 تهيئة نظام الإشعارات...');
+    
+    // انتظر حتى يتم تحميل نظام الإشعارات
+    if (typeof notificationSystem === 'undefined') {
+        console.log('⏳ انتظار تحميل نظام الإشعارات...');
+        setTimeout(initNotifications, 500);
+        return;
+    }
+    
     createNotificationsButton();
+    console.log('✅ تم تهيئة نظام الإشعارات');
 }
 
-async function loadNotificationsFromServer() {
+async function loadPopupNotifications() {
     try {
-        const response = await fetch('/api/notifications/unread');
+        console.log('📋 جاري تحميل الإشعارات للعرض...');
+        const response = await fetch('/api/notifications');
+        
+        if (!response.ok) {
+            throw new Error(`خطأ في السيرفر: ${response.status}`);
+        }
+        
         const notifications = await response.json();
-        updateNotificationBadge(notifications.length);
+        console.log('📨 الإشعارات المعروضة:', notifications);
+        
+        const content = document.getElementById('notifications-popup-content');
+        if (!content) return;
+        
+        if (notifications.length === 0) {
+            content.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">🔔</div>
+                    <p>لا توجد إشعارات جديدة</p>
+                </div>
+            `;
+        } else {
+            content.innerHTML = notifications.map(notification => `
+                <div class="notification-item" style="padding: 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px;">
+                    <div style="font-size: 20px;">${getNotificationIcon(notification.type)}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: var(--primary-blue);">
+                            ${notification.title}
+                            ${notification.important ? ' <span style="color: red;">⭐</span>' : ''}
+                        </div>
+                        <div style="color: #666; margin-bottom: 5px;">${notification.message}</div>
+                        <div style="font-size: 12px; color: #999;">
+                            ${new Date(notification.timestamp).toLocaleString('ar-EG')}
+                            ${notification.read ? ' | ✅ مقروء' : ' | 👁️ غير مقروء'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
     } catch (error) {
-        console.error('فشل في تحميل الإشعارات:', error);
+        console.error('❌ فشل في تحميل الإشعارات للعرض:', error);
+        const content = document.getElementById('notifications-popup-content');
+        if (content) {
+            content.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #ef4444;">
+                    فشل في تحميل الإشعارات: ${error.message}
+                </div>
+            `;
+        }
     }
 }
 
@@ -420,8 +511,10 @@ function updateNotificationBadge(count) {
         if (count > 0) {
             badge.textContent = count;
             badge.style.display = 'inline-block';
+            console.log(`🔴 تحديث العداد: ${count} إشعارات غير مقروءة`);
         } else {
             badge.style.display = 'none';
+            console.log('⚪ لا توجد إشعارات غير مقروءة');
         }
     }
 }
@@ -430,7 +523,6 @@ function createNotificationsButton() {
     const navMenu = document.querySelector('.nav-menu');
     if (!navMenu) return;
     
-    // تحقق إذا كان الزر موجوداً مسبقاً
     if (document.querySelector('.nav-notifications')) return;
     
     const notificationsItem = document.createElement('li');
@@ -443,15 +535,27 @@ function createNotificationsButton() {
     `;
     navMenu.appendChild(notificationsItem);
     
-    // إضافة حدث النقر
     document.getElementById('notifications-toggle').addEventListener('click', function(e) {
         e.preventDefault();
         showNotificationsPopup();
     });
+    
+    console.log('✅ تم إنشاء زر الإشعارات');
+}
+
+async function updateNotificationBadgeFromServer() {
+    try {
+        const response = await fetch('/api/notifications');
+        const notifications = await response.json();
+        const unreadCount = notifications.filter(n => !n.read).length;
+        updateNotificationBadge(unreadCount);
+    } catch (error) {
+        console.error('❌ فشل في تحديث عداد الإشعارات:', error);
+        updateNotificationBadge(0);
+    }
 }
 
 function showNotificationsPopup() {
-    // إنشاء نافذة الإشعارات
     const popup = document.createElement('div');
     popup.className = 'notifications-popup';
     popup.style.cssText = `
@@ -483,59 +587,26 @@ function showNotificationsPopup() {
     `;
     
     document.body.appendChild(popup);
-    
-    // تحميل الإشعارات
     loadPopupNotifications();
 }
 
-async function loadPopupNotifications() {
-    try {
-        const response = await fetch('/api/notifications/unread');
-        const notifications = await response.json();
-        
-        const content = document.getElementById('notifications-popup-content');
-        
-        if (notifications.length === 0) {
-            content.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">🔔</div>
-                    <p>لا توجد إشعارات جديدة</p>
-                </div>
-            `;
-        } else {
-            content.innerHTML = notifications.map(notification => `
-                <div class="notification-item" style="padding: 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px;">
-                    <div style="font-size: 20px;">${getNotificationIcon(notification.type)}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: var(--primary-blue);">${notification.title}</div>
-                        <div style="color: #666; margin-bottom: 5px;">${notification.message}</div>
-                        <div style="font-size: 12px; color: #999;">${new Date(notification.timestamp).toLocaleString('ar-EG')}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-    } catch (error) {
-        const content = document.getElementById('notifications-popup-content');
-        content.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: #ef4444;">
-                فشل في تحميل الإشعارات
-            </div>
-        `;
-    }
+// وظائف مساعدة
+function getLanguageName(langCode) {
+    const languages = {
+        'english': 'اللغة الإنجليزية',
+        'german': 'اللغة الألمانية', 
+        'french': 'اللغة الفرنسية'
+    };
+    return languages[langCode] || langCode;
 }
 
-function getNotificationIcon(type) {
-    const icons = {
-        'info': 'ℹ️',
-        'success': '✅',
-        'warning': '⚠️',
-        'error': '❌',
-        'update': '🔄',
-        'event': '🎉',
-        'course': '📚',
-        'news': '📰'
-    };
-    return icons[type] || '🔔';
+function formatDate(dateString) {
+    try {
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('ar-EG', options);
+    } catch (error) {
+        return dateString;
+    }
 }
 
 // إضافة أنيميشن للعناصر
@@ -562,3 +633,8 @@ window.addEventListener('load', function() {
         observer.observe(el);
     });
 });
+
+// جعل الدوال متاحة عالمياً
+window.loadPopupNotifications = loadPopupNotifications;
+window.showNotificationsPopup = showNotificationsPopup;
+window.updateNotificationBadgeFromServer = updateNotificationBadgeFromServer;
