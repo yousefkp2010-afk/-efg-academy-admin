@@ -1,4 +1,4 @@
-// js/main.js - نظام مبسط بدون تعقيد
+// js/main.js - الإصدار النهائي المؤكد
 
 // متغيرات النظام
 let allNotifications = [];
@@ -13,32 +13,6 @@ async function loadData() {
     } catch (error) {
         console.error('❌ فشل في تحميل البيانات:', error);
         window.efgData = { news: [], courses: {}, lessons: {}, notifications: [] };
-    }
-}
-
-// تحميل الإشعارات من السيرفر
-async function loadNotifications() {
-    try {
-        console.log('🔄 جاري تحميل الإشعارات...');
-        const response = await fetch('/api/notifications');
-        
-        if (!response.ok) throw new Error(`خطأ في السيرفر: ${response.status}`);
-        
-        allNotifications = await response.json();
-        console.log('📨 عدد الإشعارات المستلمة:', allNotifications.length);
-        
-        // تحميل الإشعارات المعروضة مسبقاً
-        loadDisplayedNotifications();
-        
-        // عرض الإشعارات الجديدة
-        showNewNotifications();
-        
-        // تحديث العداد
-        updateNotificationBadge();
-        
-    } catch (error) {
-        console.error('❌ فشل في تحميل الإشعارات:', error);
-        allNotifications = [];
     }
 }
 
@@ -66,6 +40,33 @@ function saveDisplayedNotifications() {
     }
 }
 
+// تحميل الإشعارات من السيرفر
+async function loadNotifications() {
+    try {
+        console.log('🔄 جاري تحميل الإشعارات من السيرفر...');
+        const response = await fetch('/api/notifications');
+        
+        if (!response.ok) throw new Error(`خطأ في السيرفر: ${response.status}`);
+        
+        allNotifications = await response.json();
+        console.log('📨 عدد الإشعارات المستلمة:', allNotifications.length);
+        console.log('📝 محتوى الإشعارات:', allNotifications);
+        
+        // تحميل الإشعارات المعروضة مسبقاً
+        loadDisplayedNotifications();
+        
+        // عرض الإشعارات الجديدة
+        showNewNotifications();
+        
+        // تحديث العداد
+        updateNotificationBadge();
+        
+    } catch (error) {
+        console.error('❌ فشل في تحميل الإشعارات:', error);
+        allNotifications = [];
+    }
+}
+
 // عرض الإشعارات الجديدة
 function showNewNotifications() {
     const newNotifications = allNotifications.filter(notification => 
@@ -75,7 +76,7 @@ function showNewNotifications() {
     console.log('🆕 الإشعارات الجديدة:', newNotifications.length);
 
     if (newNotifications.length > 0) {
-        // عرض أول إشعار جديد فقط (لمنع التكرار)
+        // عرض أول إشعار جديد فقط
         const notification = newNotifications[0];
         showNotificationPopup(notification);
         
@@ -89,7 +90,6 @@ function showNewNotifications() {
 
 // عرض نافذة منبثقة للإشعار
 function showNotificationPopup(notification) {
-    // منع النوافذ المكررة
     if (document.querySelector('.notification-popup')) return;
 
     const popup = document.createElement('div');
@@ -127,7 +127,6 @@ function showNotificationPopup(notification) {
     
     document.body.appendChild(popup);
     
-    // إزالة النافذة تلقائياً بعد 8 ثواني
     setTimeout(() => {
         closeNotificationPopup(popup.querySelector('button'));
     }, 8000);
@@ -201,67 +200,114 @@ function updateNotificationBadge() {
     }
 }
 
-// تحميل الإشعارات في الصندوق
-async function loadPopupNotifications() {
+// 🎯 الدالة الأساسية التي كانت مفقودة: جلب الإشعارات لعرضها في الصندوق
+async function loadNotificationsForPopup() {
     try {
-        console.log('📦 جاري تحميل الإشعارات للصندوق...');
+        console.log('🎯 جاري جلب الإشعارات للصندوق...');
         const response = await fetch('/api/notifications');
         
         if (!response.ok) throw new Error(`خطأ في السيرفر: ${response.status}`);
         
         const notifications = await response.json();
-        const content = document.getElementById('notifications-popup-content');
+        console.log('📦 الإشعارات المستلمة للصندوق:', notifications);
         
-        if (!content) {
-            console.error('❌ عنصر عرض الإشعارات غير موجود');
-            return;
-        }
-        
-        console.log('📊 عرض الإشعارات في الصندوق:', notifications.length);
-        
-        if (notifications.length === 0) {
-            content.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">🔔</div>
-                    <p>لا توجد إشعارات</p>
-                </div>
-            `;
-        } else {
-            content.innerHTML = notifications.map(notification => `
-                <div class="notification-item" style="padding: 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px; background: ${notification.read ? '#f9f9f9' : 'white'};">
-                    <div style="font-size: 20px;">${getNotificationIcon(notification.type)}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #0d1b36; display: flex; align-items: center; gap: 8px;">
-                            ${notification.title}
-                            ${notification.important ? '<span style="color: red; font-size: 12px; background: #ffeaea; padding: 2px 6px; border-radius: 10px;">⭐ مهم</span>' : ''}
-                        </div>
-                        <div style="color: #666; margin-bottom: 5px; line-height: 1.4;">${notification.message}</div>
-                        <div style="font-size: 12px; color: #999;">
-                            ${new Date(notification.timestamp).toLocaleString('ar-EG')}
-                            ${notification.read ? ' | ✅ مقروء' : ' | 👁️ غير مقروء'}
-                            ${notification.link && notification.link !== '#' ? 
-                                ` | <a href="${notification.link}" target="_blank" style="color: #d4af37;">رابط متعلق</a>` : ''
-                            }
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
+        return notifications;
     } catch (error) {
-        console.error('❌ فشل في تحميل الإشعارات للصندوق:', error);
-        const content = document.getElementById('notifications-popup-content');
-        if (content) {
-            content.innerHTML = `
-                <div style="text-align: center; padding: 20px; color: #ef4444;">
-                    فشل في تحميل الإشعارات
-                </div>
-            `;
-        }
+        console.error('❌ فشل في جلب الإشعارات للصندوق:', error);
+        return [];
     }
 }
 
-// عرض صندوق الإشعارات
+// 🎯 الدالة المصححة لعرض الإشعارات في الصندوق
+async function displayNotificationsInPopup() {
+    console.log('🎪 بدء عرض الإشعارات في الصندوق...');
+    
+    const content = document.getElementById('notifications-popup-content');
+    if (!content) {
+        console.error('❌ عنصر المحتوى غير موجود!');
+        return;
+    }
+
+    // إظهار حالة التحميل
+    content.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: #666;">
+            <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+            جاري تحميل الإشعارات...
+        </div>
+    `;
+
+    // جلب البيانات أولاً
+    const notifications = await loadNotificationsForPopup();
+    console.log('🎁 البيانات المستلمة للعرض:', notifications);
+
+    // الآن عرض البيانات
+    if (notifications.length === 0) {
+        content.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 20px;">🔔</div>
+                <p>لا توجد إشعارات</p>
+            </div>
+        `;
+    } else {
+        // مسح المحتوى القديم
+        content.innerHTML = '';
+        
+        // إضافة كل إشعار
+        notifications.forEach((notification, index) => {
+            const notificationElement = document.createElement('div');
+            notificationElement.className = 'notification-item';
+            notificationElement.style.cssText = `
+                padding: 15px;
+                border-bottom: ${index < notifications.length - 1 ? '1px solid #eee' : 'none'};
+                display: flex;
+                gap: 10px;
+                background: ${notification.read ? '#f9f9f9' : 'white'};
+                opacity: 1;
+                visibility: visible;
+            `;
+            
+            notificationElement.innerHTML = `
+                <div style="font-size: 20px; flex-shrink: 0;">${getNotificationIcon(notification.type)}</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: bold; margin-bottom: 5px; color: #0d1b36; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        ${notification.title}
+                        ${notification.important ? 
+                            '<span style="color: red; font-size: 12px; background: #ffeaea; padding: 2px 6px; border-radius: 10px;">⭐ مهم</span>' : 
+                            ''
+                        }
+                    </div>
+                    <div style="color: #666; margin-bottom: 5px; line-height: 1.4;">${notification.message}</div>
+                    <div style="font-size: 12px; color: #999; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span>${new Date(notification.timestamp).toLocaleString('ar-EG')}</span>
+                        <span style="color: ${notification.read ? '#10b981' : '#ef4444'};">
+                            ${notification.read ? '✅ مقروء' : '👁️ غير مقروء'}
+                        </span>
+                        ${notification.link && notification.link !== '#' ? 
+                            `<a href="${notification.link}" target="_blank" style="color: #d4af37;">رابط متعلق</a>` : 
+                            ''
+                        }
+                    </div>
+                </div>
+            `;
+            
+            content.appendChild(notificationElement);
+        });
+        
+        console.log('✅ تم عرض الإشعارات في الصندوق:', notifications.length);
+    }
+}
+
+// 🎯 الدالة المصححة لفتح صندوق الإشعارات
 function showNotificationsPopup() {
+    console.log('🚀 فتح صندوق الإشعارات...');
+    
+    // إغلاق أي صندوق مفتوح مسبقاً
+    const existingPopup = document.querySelector('.notifications-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    // إنشاء الصندوق
     const popup = document.createElement('div');
     popup.className = 'notifications-popup';
     popup.style.cssText = `
@@ -270,7 +316,7 @@ function showNotificationsPopup() {
         left: 50%;
         transform: translate(-50%, -50%);
         background: white;
-        padding: 20px;
+        padding: 25px;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         z-index: 1000;
@@ -278,22 +324,41 @@ function showNotificationsPopup() {
         max-width: 600px;
         max-height: 80vh;
         overflow-y: auto;
+        border: 2px solid #0d1b36;
     `;
     
     popup.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-            <h3 style="margin: 0; color: #0d1b36;">🔔 جميع الإشعارات</h3>
-            <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">✕</button>
+            <h3 style="margin: 0; color: #0d1b36; font-size: 1.5rem;">🔔 جميع الإشعارات</h3>
+            <button onclick="closeNotificationsPopup()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 5px;">✕</button>
         </div>
-        <div id="notifications-popup-content">
-            <div style="text-align: center; padding: 20px; color: #666;">
+        <div id="notifications-popup-content" style="min-height: 200px;">
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
                 جاري تحميل الإشعارات...
             </div>
         </div>
     `;
     
     document.body.appendChild(popup);
-    loadPopupNotifications();
+    console.log('✅ تم إنشاء صندوق الإشعارات');
+    
+    // 🎯 الآن جلب وعرض الإشعارات بعد إنشاء الصندوق مباشرة
+    displayNotificationsInPopup();
+}
+
+// إغلاق صندوق الإشعارات
+function closeNotificationsPopup() {
+    const popup = document.querySelector('.notifications-popup');
+    if (popup) {
+        popup.style.opacity = '0';
+        popup.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        setTimeout(() => {
+            if (popup.parentNode) {
+                popup.parentNode.removeChild(popup);
+            }
+        }, 300);
+    }
 }
 
 // إنشاء زر الإشعارات
@@ -329,19 +394,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 function initializeApp() {
     console.log('⚙️ تهيئة التطبيق...');
     
+    loadDisplayedNotifications();
     initNavigation();
     initLevelSystem();
     loadContent();
     createNotificationsButton();
     initSmoothScroll();
     
-    // تحميل الإشعارات بعد تهيئة التطبيق
     setTimeout(() => {
         loadNotifications();
     }, 1000);
 }
 
-// نظام التنقل
+// باقي الدوال تبقى كما هي بدون تغيير
 function initNavigation() {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
@@ -375,7 +440,6 @@ function initNavigation() {
     });
 }
 
-// نظام المستويات
 function initLevelSystem() {
     const levelButtons = document.querySelectorAll('.level-btn');
     
@@ -667,5 +731,6 @@ function formatDate(dateString) {
 
 // جعل الدوال متاحة عالمياً
 window.closeNotificationPopup = closeNotificationPopup;
+window.closeNotificationsPopup = closeNotificationsPopup;
 window.showNotificationsPopup = showNotificationsPopup;
-window.loadPopupNotifications = loadPopupNotifications;
+window.displayNotificationsInPopup = displayNotificationsInPopup;
