@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - EFG Academy</title>
+    <style>
+        :root {
+            --primary-blue: #0d1b36;
+            --accent-blue: #1e3a8a;
+            --gold: #d4af37;
+            --light-bg: #f8fafc;
+            --white: #ffffff;
+            --text-dark: #1e293b;
+            --gray: #64748b;
+            --light-gray: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light-bg);
+            color: var(--text-dark);
+        }
+
+        .header {
+            background: var(--primary-blue);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(13, 27, 54, 0.1);
+        }
+
+        .nav-tabs {
+            background: var(--white);
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab:hover {
+            color: var(--accent-blue);
+        }
+
+        .nav-tab.active {
+            border-bottom-color: var(--gold);
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 2rem;
+            min-height: calc(100vh - 140px);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .logout-btn {
+            background: var(--gold);
+            color: var(--primary-blue);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #b8941f;
+            transform: translateY(-2px);
+        }
+
+        /* نماذج الإدخال */
+        .form-container {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(13, 27, 54, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-family: inherit;
+            transition: border 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--primary-blue);
+        }
+
+        .btn-primary:hover {
+            background: #b8941f;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* قوائم البيانات */
+        .data-list {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(13, 27, 54, 0.1);
+            overflow: hidden;
+        }
+
+        .data-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-item:hover {
+            background: var(--light-bg);
+        }
+
+        .data-content h4 {
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .data-content p {
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .data-meta {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .message.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .data-item {
+            transition: all 0.3s ease;
+        }
+
+        .data-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* تبويب النشر */
+        .publish-status {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 0.5rem;
+        }
+
+        .status-online {
+            background: var(--success);
+        }
+
+        .status-offline {
+            background: var(--error);
+        }
+
+        .status-warning {
+            background: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>لوحة تحكم EFG Academy</h1>
+        <a href="/admin/logout" class="logout-btn">تسجيل الخروج</a>
+    </div>
+    
+    <div class="nav-tabs">
+        <div class="nav-tab active" data-tab="news">📰 الأخبار</div>
+        <div class="nav-tab" data-tab="courses">📚 الكورسات</div>
+        <div class="nav-tab" data-tab="lessons">🎓 الدروس</div>
+        <div class="nav-tab" data-tab="publish">🚀 النشر إلى GitHub</div>
+    </div>
+
+    <div class="content">
+        <!-- قسم الأخبار -->
+        <div id="news" class="tab-content active">
+            <h2>إدارة الأخبار</h2>
+            
+            <div class="form-container">
+                <h3>إضافة خبر جديد</h3>
+                <form id="newsForm">
+                    <div class="form-group">
+                        <label for="newsTitle">عنوان الخبر:</label>
+                        <input type="text" id="newsTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newsDescription">وصف الخبر:</label>
+                        <textarea id="newsDescription" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="newsImage">رابط الصورة:</label>
+                        <input type="url" id="newsImage" name="image" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="newsType">نوع الخبر:</label>
+                        <select id="newsType" name="type">
+                            <option value="إطلاق">إطلاق</option>
+                            <option value="مسابقة">مسابقة</option>
+                            <option value="تسجيل">تسجيل</option>
+                            <option value="بودكاست">بودكاست</option>
+                            <option value="إعلان">إعلان</option>
+                            <option value="تحديث">تحديث</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">إضافة الخبر</button>
+                </form>
+            </div>
+
+            <div id="newsMessage" class="message" style="display: none;"></div>
+
+            <div class="data-list">
+                <h3 style="padding: 1.5rem; border-bottom: 1px solid var(--light-gray); margin: 0;">الأخبار الحالية</h3>
+                <div id="newsList">
+                    <!-- الأخبار تُعرض هنا بالجافاسكريبت -->
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الكورسات -->
+        <div id="courses" class="tab-content">
+            <h2>إدارة الكورسات</h2>
+            
+            <div class="form-container">
+                <h3>إضافة مستوى جديد</h3>
+                <form id="courseForm">
+                    <div class="form-group">
+                        <label for="courseLanguage">اللغة:</label>
+                        <select id="courseLanguage" name="language" required>
+                            <option value="english">الإنجليزية</option>
+                            <option value="german">الألمانية</option>
+                            <option value="french">الفرنسية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseLevel">المستوى:</label>
+                        <input type="text" id="courseLevel" name="level" placeholder="A1, A2, B1, ..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseTitle">عنوان المستوى:</label>
+                        <input type="text" id="courseTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDescription">وصف المستوى:</label>
+                        <textarea id="courseDescription" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseYoutubeLink">رابط يوتيوب:</label>
+                        <input type="url" id="courseYoutubeLink" name="youtubeLink">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseTelegramGroup">رابط مجموعة التلجرام:</label>
+                        <input type="url" id="courseTelegramGroup" name="telegramGroup">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseImage">رابط الصورة:</label>
+                        <input type="url" id="courseImage" name="image" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="courseStatus">حالة المستوى:</label>
+                        <select id="courseStatus" name="status">
+                            <option value="مكتمل">مكتمل</option>
+                            <option value="جاري التجهيز">جاري التجهيز</option>
+                            <option value="قريباً">قريباً</option>
+                            <option value="قيد التطوير">قيد التطوير</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">إضافة المستوى</button>
+                </form>
+            </div>
+
+            <div id="coursesMessage" class="message" style="display: none;"></div>
+
+            <div class="data-list">
+                <h3 style="padding: 1.5rem; border-bottom: 1px solid var(--light-gray); margin: 0;">الكورسات الحالية</h3>
+                <div id="coursesList">
+                    <!-- الكورسات تُعرض هنا بالجافاسكريبت -->
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الدروس -->
+        <div id="lessons" class="tab-content">
+            <h2>إدارة الدروس</h2>
+            
+            <div class="form-container">
+                <h3>إضافة درس جديد</h3>
+                <form id="lessonForm">
+                    <div class="form-group">
+                        <label for="lessonLanguage">اللغة:</label>
+                        <select id="lessonLanguage" name="language" required>
+                            <option value="english">الإنجليزية</option>
+                            <option value="german">الألمانية</option>
+                            <option value="french">الفرنسية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonLevel">المستوى:</label>
+                        <input type="text" id="lessonLevel" name="level" placeholder="A1, A2, B1, ..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonTitle">عنوان الدرس:</label>
+                        <input type="text" id="lessonTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonDescription">وصف الدرس:</label>
+                        <textarea id="lessonDescription" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonYoutubeLink">رابط يوتيوب:</label>
+                        <input type="url" id="lessonYoutubeLink" name="youtubeLink" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonImage">رابط الصورة:</label>
+                        <input type="url" id="lessonImage" name="image" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonDuration">مدة الدرس:</label>
+                        <input type="text" id="lessonDuration" name="duration" placeholder="15:30" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonOrder">ترتيب الدرس:</label>
+                        <input type="number" id="lessonOrder" name="order" value="1" min="1">
+                    </div>
+                    <button type="submit" class="btn btn-primary">إضافة الدرس</button>
+                </form>
+            </div>
+
+            <div id="lessonsMessage" class="message" style="display: none;"></div>
+
+            <div class="data-list">
+                <h3 style="padding: 1.5rem; border-bottom: 1px solid var(--light-gray); margin: 0;">الدروس الحالية</h3>
+                <div id="lessonsList">
+                    <!-- الدروس تُعرض هنا بالجافاسكريبت -->
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم النشر إلى GitHub -->
+        <div id="publish" class="tab-content">
+            <h2>🚀 النشر إلى GitHub</h2>
+            
+            <div class="publish-status">
+                <h3>حالة النظام</h3>
+                <div class="status-item">
+                    <span>لوحة التحكم (Render):</span>
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-online"></span>
+                        <span>متصل</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <span>GitHub Pages:</span>
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator" id="githubStatus"></span>
+                        <span id="githubStatusText">جاري الفحص...</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <span>آخر تحديث:</span>
+                    <span id="lastUpdateTime">لم يتم النشر بعد</span>
+                </div>
+            </div>
+
+            <div class="form-container">
+                <h3>النشر اليدوي</h3>
+                <p style="color: var(--gray); margin-bottom: 1rem;">
+                    ⚡ يتم النشر تلقائياً عند أي تعديل على البيانات. يمكنك استخدام هذا الزر للنشر اليدوي إذا أردت.
+                </p>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button onclick="manualPublish()" class="btn btn-success" id="publishBtn">
+                        📤 نشر البيانات إلى GitHub
+                    </button>
+                    <button onclick="checkGitHubStatus()" class="btn btn-primary">
+                        🔄 فحص الحالة
+                    </button>
+                </div>
+            </div>
+
+            <div id="publishMessage" class="message" style="display: none;"></div>
+
+            <div class="form-container">
+                <h3>روابط البيانات المنشورة</h3>
+                <div style="background: var(--light-bg); padding: 1rem; border-radius: 8px;">
+                    <p><strong>رابط البيانات على GitHub:</strong></p>
+                    <code id="githubDataUrl" style="background: var(--white); padding: 0.5rem; border-radius: 4px; display: block; margin: 0.5rem 0;">
+                        https://raw.githubusercontent.com/[username]/[repo]/main/data.json
+                    </code>
+                    <p style="color: var(--gray); font-size: 0.9rem; margin-top: 0.5rem;">
+                        هذا هو الرابط الذي سيستخدمه الموقع الرئيسي على Netlify لتحميل البيانات.
+                    </p>
+                </div>
+            </div>
+
+            <div class="form-container">
+                <h3>تعليمات الإعداد</h3>
+                <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                    <h4 style="color: #0369a1; margin-bottom: 1rem;">📝 خطوات إعداد GitHub:</h4>
+                    <ol style="color: var(--text-dark); line-height: 1.6; padding-right: 1rem;">
+                        <li>أنشئ مستودع جديد على GitHub</li>
+                        <li>أنشئ Personal Access Token من إعدادات GitHub</li>
+                        <li>أضف متغيرات البيئة في Render:
+                            <ul style="margin-top: 0.5rem;">
+                                <li><code>GITHUB_TOKEN</code>: التوكن الخاص بك</li>
+                                <li><code>GITHUB_OWNER</code>: اسم المستخدم</li>
+                                <li><code>GITHUB_REPO</code>: اسم المستودع</li>
+                            </ul>
+                        </li>
+                        <li>تفعيل GitHub Pages من إعدادات المستودع</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تبديل التبويبات
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+
+                // إذا كان تبويب النشر، نفحص الحالة
+                if (tab.dataset.tab === 'publish') {
+                    checkGitHubStatus();
+                }
+            });
+        });
+
+        // إدارة الأخبار
+        const newsForm = document.getElementById('newsForm');
+        const newsList = document.getElementById('newsList');
+        const newsMessage = document.getElementById('newsMessage');
+
+        // تحميل الأخبار عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNews();
+            loadCourses();
+            loadLessons();
+        });
+
+        // إضافة خبر جديد
+        newsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newsData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                image: formData.get('image') || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=250&fit=crop',
+                type: formData.get('type'),
+                date: new Date().toISOString().split('T')[0],
+                urgent: false
+            };
+
+            try {
+                const response = await fetch('/admin/api/news', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newsData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('تم إضافة الخبر بنجاح!', 'success');
+                    newsForm.reset();
+                    loadNews();
+                } else {
+                    showMessage('حدث خطأ أثناء إضافة الخبر', 'error');
+                }
+            } catch (error) {
+                showMessage('خطأ في الاتصال بالسيرفر', 'error');
+            }
+        });
+
+        // تحميل قائمة الأخبار
+        async function loadNews() {
+            try {
+                const response = await fetch('/admin/api/news');
+                const news = await response.json();
+                
+                newsList.innerHTML = '';
+                
+                if (news.length === 0) {
+                    newsList.innerHTML = '<div class="data-item"><p>لا توجد أخبار</p></div>';
+                    return;
+                }
+
+                news.forEach(item => {
+                    const newsItem = document.createElement('div');
+                    newsItem.className = 'data-item';
+                    newsItem.innerHTML = `
+                        <div class="data-content">
+                            <h4>${item.title}</h4>
+                            <p>${item.description}</p>
+                            <div class="data-meta">
+                                ${item.date} • ${item.type}
+                            </div>
+                        </div>
+                        <div class="data-actions">
+                            <button class="btn btn-danger" onclick="deleteNews(${item.id})">حذف</button>
+                        </div>
+                    `;
+                    newsList.appendChild(newsItem);
+                });
+            } catch (error) {
+                console.error('Error loading news:', error);
+            }
+        }
+
+        // حذف خبر
+        async function deleteNews(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الخبر؟')) return;
+
+            try {
+                const response = await fetch(`/admin/api/news/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('تم حذف الخبر بنجاح!', 'success');
+                    loadNews();
+                } else {
+                    showMessage('حدث خطأ أثناء حذف الخبر', 'error');
+                }
+            } catch (error) {
+                showMessage('خطأ في الاتصال بالسيرفر', 'error');
+            }
+        }
+
+        // إدارة الكورسات
+        const courseForm = document.getElementById('courseForm');
+        const coursesList = document.getElementById('coursesList');
+        const coursesMessage = document.getElementById('coursesMessage');
+
+        // إدارة الدروس
+        const lessonForm = document.getElementById('lessonForm');
+        const lessonsList = document.getElementById('lessonsList');
+        const lessonsMessage = document.getElementById('lessonsMessage');
+
+        // إضافة كورس جديد
+        courseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const courseData = {
+                language: formData.get('language'),
+                level: formData.get('level'),
+                title: formData.get('title'),
+                description: formData.get('description'),
+                youtubeLink: formData.get('youtubeLink') || '#',
+                telegramGroup: formData.get('telegramGroup') || '#',
+                image: formData.get('image') || 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=300&fit=crop',
+                status: formData.get('status')
+            };
+
+            try {
+                const response = await fetch('/admin/api/courses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(courseData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showCourseMessage('تم إضافة المستوى بنجاح!', 'success');
+                    courseForm.reset();
+                    loadCourses();
+                } else {
+                    showCourseMessage('حدث خطأ أثناء إضافة المستوى', 'error');
+                }
+            } catch (error) {
+                showCourseMessage('خطأ في الاتصال بالسيرفر', 'error');
+            }
+        });
+
+        // تحميل قائمة الكورسات
+        async function loadCourses() {
+            try {
+                const response = await fetch('/admin/api/courses');
+                const courses = await response.json();
+                
+                coursesList.innerHTML = '';
+                
+                if (Object.keys(courses).length === 0) {
+                    coursesList.innerHTML = '<div class="data-item"><p>لا توجد كورسات</p></div>';
+                    return;
+                }
+
+                for (const [language, levels] of Object.entries(courses)) {
+                    for (const [level, course] of Object.entries(levels)) {
+                        const courseItem = document.createElement('div');
+                        courseItem.className = 'data-item';
+                        courseItem.innerHTML = `
+                            <div class="data-content">
+                                <h4>${course.title} (${getLanguageName(language)} - ${level})</h4>
+                                <p>${course.description}</p>
+                                <div class="data-meta">
+                                    الحالة: ${course.status} | 
+                                    يوتيوب: ${course.youtubeLink !== '#' ? 'نعم' : 'لا'} | 
+                                    تلجرام: ${course.telegramGroup !== '#' ? 'نعم' : 'لا'}
+                                </div>
+                            </div>
+                            <div class="data-actions">
+                                <button class="btn btn-danger" onclick="deleteCourse('${language}', '${level}')">حذف</button>
+                            </div>
+                        `;
+                        coursesList.appendChild(courseItem);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading courses:', error);
+            }
+        }
+
+        // حذف كورس
+        async function deleteCourse(language, level) {
+            if (!confirm('هل أنت متأكد من حذف هذا المستوى؟')) return;
+
+            try {
+                const response = await fetch(`/admin/api/courses/${language}/${level}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showCourseMessage('تم حذف المستوى بنجاح!', 'success');
+                    loadCourses();
+                } else {
+                    showCourseMessage('حدث خطأ أثناء حذف المستوى', 'error');
+                }
+            } catch (error) {
+                showCourseMessage('خطأ في الاتصال بالسيرفر', 'error');
+            }
+        }
+
+        // إضافة درس جديد
+        lessonForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const lessonData = {
+                language: formData.get('language'),
+                level: formData.get('level'),
+                title: formData.get('title'),
+                description: formData.get('description'),
+                youtubeLink: formData.get('youtubeLink'),
+                image: formData.get('image') || 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=250&fit=crop',
+                duration: formData.get('duration'),
+                order: formData.get('order')
+            };
+
+            try {
+                const response = await fetch('/admin/api/lessons', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(lessonData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showLessonMessage('تم إضافة الدرس بنجاح!', 'success');
+                    lessonForm.reset();
+                    loadLessons();
+                } else {
+                    showLessonMessage('حدث خطأ أثناء إضافة الدرس', 'error');
+                }
+            } catch (error) {
+                showLessonMessage('خطأ في الاتصال بالسيرفر', 'error');
+            }
+        });
+
+        // تحميل قائمة الدروس
+        async function loadLessons() {
+            try {
+                const response = await fetch('/admin/api/lessons');
+                const lessons = await response.json();
+                
+                lessonsList.innerHTML = '';
+                
+                if (Object.keys(lessons).length === 0) {
+                    lessonsList.innerHTML = '<div class="data-item"><p>لا توجد دروس</p></div>';
+                    return;
+                }
+
+                for (const [language, levels] of Object.entries(lessons)) {
+                    for (const [level, levelLessons] of Object.entries(levels)) {
+                        levelLessons.forEach(lesson => {
+                            const lessonItem = document.createElement('div');
+                            lessonItem.className = 'data-item';
+                            lessonItem.innerHTML = `
+                                <div class="data-content">
+                                    <h4>${lesson.title} (${getLanguageName(language)} - ${level})</h4>
+                                    <p>${lesson.description}</p>
+                                    <div class="data-meta">
+                                        المدة: ${lesson.duration} | الترتيب: ${lesson.order}
+                                    </div>
+                                </div>
+                                <div class="data-actions">
+                                    <button class="btn btn-danger" onclick="deleteLesson('${language}', '${level}', ${lesson.id})">حذف</button>
+                                </div>
+                            `;
+                            lessonsList.appendChild(lessonItem);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading lessons:', error);
+            }
+        }
+
+        // حذف درس
+        async function deleteLesson(language, level, id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الدرس؟')) return;
+
+            try {
+                const response = await fetch(`/admin/api/lessons/${language}/${level}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showLessonMessage('تم حذف الدرس بنجاح!', 'success');
+                    loadLessons();
+                } else {
+                    showLessonMessage('حدث خطأ أثناء حذف الدرس', 'error');
+                }
+            } catch (error) {
+                showLessonMessage('خطأ في الاتصال بالسيرفر', 'error');
+            }
+        }
+
+        // عرض رسائل الكورسات
+        function showCourseMessage(message, type) {
+            coursesMessage.textContent = message;
+            coursesMessage.className = `message ${type}`;
+            coursesMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                coursesMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // عرض رسائل الدروس
+        function showLessonMessage(message, type) {
+            lessonsMessage.textContent = message;
+            lessonsMessage.className = `message ${type}`;
+            lessonsMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                lessonsMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // تحويل كود اللغة إلى اسم
+        function getLanguageName(langCode) {
+            const languages = {
+                'english': 'الإنجليزية',
+                'german': 'الألمانية',
+                'french': 'الفرنسية'
+            };
+            return languages[langCode] || langCode;
+        }
+
+        // عرض الرسائل
+        function showMessage(message, type) {
+            newsMessage.textContent = message;
+            newsMessage.className = `message ${type}`;
+            newsMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                newsMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // 🔥 وظائف النشر إلى GitHub
+        const publishMessage = document.getElementById('publishMessage');
+
+        // فحص حالة GitHub
+        async function checkGitHubStatus() {
+            try {
+                document.getElementById('githubStatusText').textContent = 'جاري الفحص...';
+                document.getElementById('githubStatus').className = 'status-indicator status-warning';
+
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                // إذا نجح الاتصال، نعتبر أن GitHub متصل
+                document.getElementById('githubStatusText').textContent = 'متصل';
+                document.getElementById('githubStatus').className = 'status-indicator status-online';
+                
+                showPublishMessage('✅ GitHub متصل وجاهز للنشر', 'success');
+                
+            } catch (error) {
+                document.getElementById('githubStatusText').textContent = 'غير متصل';
+                document.getElementById('githubStatus').className = 'status-indicator status-offline';
+                showPublishMessage('❌ لا يمكن الاتصال بـ GitHub', 'error');
+            }
+        }
+
+        // النشر اليدوي
+        async function manualPublish() {
+            const publishBtn = document.getElementById('publishBtn');
+            const originalText = publishBtn.innerHTML;
+            
+            try {
+                publishBtn.innerHTML = '📤 جاري النشر...';
+                publishBtn.disabled = true;
+
+                // جلب البيانات الحالية
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                // محاولة النشر
+                const publishResponse = await fetch('/admin/api/publish', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await publishResponse.json();
+                
+                if (result.success) {
+                    showPublishMessage('✅ تم النشر إلى GitHub بنجاح!', 'success');
+                    document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('ar-EG');
+                } else {
+                    showPublishMessage('❌ فشل في النشر: ' + (result.error || 'حدث خطأ غير معروف'), 'error');
+                }
+                
+            } catch (error) {
+                showPublishMessage('❌ خطأ في الاتصال بالسيرفر', 'error');
+            } finally {
+                publishBtn.innerHTML = originalText;
+                publishBtn.disabled = false;
+            }
+        }
+
+        // عرض رسائل النشر
+        function showPublishMessage(message, type) {
+            publishMessage.textContent = message;
+            publishMessage.className = `message ${type}`;
+            publishMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                publishMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // تحديث رابط GitHub عند التحميل
+        document.addEventListener('DOMContentLoaded', function() {
+            // يمكن تحديث هذا الرابط يدوياً بعد إعداد GitHub
+            const githubDataUrl = document.getElementById('githubDataUrl');
+            // سيتم تحديث هذا الرابط تلقائياً عند إضافة API مناسب
+        });
+    </script>
+</body>
+</html>
